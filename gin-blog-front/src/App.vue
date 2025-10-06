@@ -14,14 +14,14 @@ const userStore = useUserStore()
 const messageRef = ref(null)
 const notifyRef = ref(null)
 
-onMounted(() => {
+onMounted(async () => {
   appStore.getPageList()
   appStore.getBlogInfo()
   userStore.getUserInfo()
-  //上报
-  fetch('/api/report', {
-      method: 'POST'
-  })
+  
+  // 上报位置信息
+  appStore.reportLocation()
+  
   // 挂载全局提示
   window.$message = messageRef.value
   window.$notify = notifyRef.value

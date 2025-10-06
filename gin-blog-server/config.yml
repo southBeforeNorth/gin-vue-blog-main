@@ -26,7 +26,7 @@ Session:
   Salt: "salt"
   MaxAge: 600 # second
 Log:
-  Level: "error" # debug | info | warn | error
+  Level: "debug" # debug | info | warn | error
   Format: "text" # text | json
   Directory: "log"
 Email:
@@ -50,3 +50,6 @@ Qiniu:
   SecretKey: ""
   UseHttps: false
   UseCdnDomains: false
+Geocoding:
+  AmapApiKey: "693f12f203cf62f4f021008d58f372fe" # 高德地图API Key
+  BaiduApiKey: "" # 百度地图API Key (可选)

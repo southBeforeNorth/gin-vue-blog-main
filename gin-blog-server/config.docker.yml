@@ -58,3 +58,6 @@ Qiniu:
   SecretKey: ""
   UseHttps: false
   UseCdnDomains: false
+Geocoding:
+  AmapApiKey: "693f12f203cf62f4f021008d58f372fe" # 高德地图API Key
+  BaiduApiKey: "" # 百度地图API Key (可选)

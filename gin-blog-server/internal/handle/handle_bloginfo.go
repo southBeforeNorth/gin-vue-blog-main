@@ -31,6 +31,17 @@ type AboutReq struct {
 	Content string `json:"content"`
 }
 
+type LocationInfo struct {
+	Latitude  float64 `json:"latitude"`
+	Longitude float64 `json:"longitude"`
+	Accuracy  float64 `json:"accuracy"`
+	Timestamp int64   `json:"timestamp"`
+}
+
+type ReportReq struct {
+	Location LocationInfo `json:"location"`
+}
+
 func (*BlogInfo) GetConfigMap(c *gin.Context) {
 	db := GetDB(c)
 	rdb := GetRDB(c)
@@ -164,10 +175,16 @@ func (*BlogInfo) UpdateAbout(c *gin.Context) {
 // @Tags blog_info
 // @Accept json
 // @Produce json
-// @Param data body object true "用户信息"
+// @Param data body ReportReq true "用户信息"
 // @Success 0 {object} Response[any]
 // @Router /report [post]
 func (*BlogInfo) Report(c *gin.Context) {
+	var req ReportReq
+	if err := c.ShouldBindJSON(&req); err != nil {
+		ReturnError(c, g.ErrRequest, err)
+		return
+	}
+
 	rdb := GetRDB(c)
 	ipAddress := utils.IP.GetIpAddress(c)
 	userAgent := utils.IP.GetUserAgent(c)
@@ -176,14 +193,25 @@ func (*BlogInfo) Report(c *gin.Context) {
 	today := time.Now().Format("2006-01-02 15")
 	uuid := utils.MD5(ipAddress + browser + os + today)
 	ctx := context.Background()
+
 	saveSiteVisit := func(iPSource string) {
+		// 解析经纬度获取地址信息
+		var locationAddress string
+		var coordinates string
+		if req.Location.Latitude != 0 && req.Location.Longitude != 0 {
+			locationAddress = utils.Geocoding.GetAddress(req.Location.Latitude, req.Location.Longitude)
+			// 格式化经纬度信息：纬度,经度,精度
+			coordinates = fmt.Sprintf("%.6f,%.6f,%.2f", req.Location.Latitude, req.Location.Longitude, req.Location.Accuracy)
+		}
 		siteVisit := model.SiteVisits{
-			UUID:     uuid,
-			IP:       ipAddress,
-			IPSource: iPSource,
-			Browser:  browser,
-			OS:       os,
-			Device:   "电脑",
+			UUID:            uuid,
+			IP:              ipAddress,
+			IPSource:        iPSource,
+			Browser:         browser,
+			OS:              os,
+			Device:          "电脑",
+			Coordinates:     coordinates,
+			LocationAddress: locationAddress,
 		}
 		if userAgent.URL != nil {
 			siteVisit.PageURL = userAgent.URL.Path

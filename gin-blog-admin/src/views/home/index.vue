@@ -27,7 +27,7 @@ async function getOneSentence() {
   fetch('https://v1.hitokoto.cn?c=i')
     .then(resp => resp.json())
     .then(data => sentence.value = data.hitokoto)
-    .catch(() => sentence.value = '宠辱不惊，看庭前花开花落；去留无意，望天上云卷云舒。')
+    .catch(() => sentence.value = '酌贪泉而觉爽，处涸辙以犹欢')
 }
 </script>
 
