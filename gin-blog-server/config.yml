@@ -1,6 +1,7 @@
 Server:
   Mode: debug # debug | release
   Port: :8765
+  BaseURL: "http://localhost:8765" # 基础URL，用于生成邮件验证链接
   DbType: "mysql" # mysql | sqlite
   DbAutoMigrate: false # 是否自动迁移数据库表结构 (表结构没变可以不迁移, 提高启动速度)
   DbLogMode: "info" # 日志级别 silent, error, warn, info, 默认 info

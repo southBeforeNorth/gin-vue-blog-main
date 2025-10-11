@@ -23,11 +23,11 @@
           v-model="form.content"
           placeholder="记录此刻的心情..."
           class="content-textarea"
-          maxlength="200"
+          maxlength="1000"
           @input="adjustTextareaHeight"
           ref="contentTextarea"
         ></textarea>
-        <div class="char-count">{{ form.content.length }}/200</div>
+        <div class="char-count">{{ form.content.length }}/1000</div>
       </div>
 
       <!-- 图片上传 -->

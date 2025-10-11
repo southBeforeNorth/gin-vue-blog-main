@@ -62,9 +62,10 @@ var (
 	ErrRedisOp  = RegisterResult(9005, "Redis 操作异常")
 	ErrUserAuth = RegisterResult(9006, "用户认证异常")
 
-	ErrPassword     = RegisterResult(1002, "密码错误")
-	ErrUserNotExist = RegisterResult(1003, "该用户不存在")
-	ErrOldPassword  = RegisterResult(1010, "旧密码不正确")
+	ErrPassword             = RegisterResult(1002, "密码错误")
+	ErrUserNotExist         = RegisterResult(1003, "该用户不存在")
+	ErrOldPassword          = RegisterResult(1010, "旧密码不正确")
+	ErrCodeExpiredOrInvalid = RegisterResult(1011, "验证码已过期或无效")
 
 	ErrTokenNotExist    = RegisterResult(1201, "TOKEN 不存在，请重新登陆")
 	ErrTokenRuntime     = RegisterResult(1202, "TOKEN 已过期，请重新登陆")
@@ -88,8 +89,8 @@ var (
 	ErrMenuUsedByRole      = RegisterResult(6007, "该菜单正在被角色使用，无法删除")
 	ErrMenuHasChildren     = RegisterResult(6008, "该菜单下存在子菜单，无法删除")
 
-	ErrSendEmail = RegisterResult(6101, "发送邮件失败")
-	ErrCodeNoexit = RegisterResult(6102, "Code不存在 请重新注册")
+	ErrSendEmail      = RegisterResult(6101, "发送邮件失败")
+	ErrCodeNoexit     = RegisterResult(6102, "Code不存在 请重新注册")
 	ErrParseEmailCode = RegisterResult(6103, "解析邮件Code失败 请重试")
-	ErrUserExist = RegisterResult(6104, "该邮箱已经注册 请重新注册")
+	ErrUserExist      = RegisterResult(6104, "该邮箱已经注册 请重新注册")
 )

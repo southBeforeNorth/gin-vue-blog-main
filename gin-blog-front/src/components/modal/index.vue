@@ -2,6 +2,7 @@
 import SearchModal from '@/components/modal/SearchModal.vue'
 import LoginModal from '@/components/modal/LoginModal.vue'
 import RegisterModal from '@/components/modal/RegisterModal.vue'
+import ChangePasswordModal from '@/components/modal/ChangePasswordModal.vue'
 </script>
 
 <template>
@@ -11,5 +12,6 @@ import RegisterModal from '@/components/modal/RegisterModal.vue'
   <LoginModal />
   <!-- 注册窗口 -->
   <RegisterModal />
-  <!-- TODO: 忘记密码窗口 -->
+  <!-- 修改密码窗口 -->
+  <ChangePasswordModal />
 </template>

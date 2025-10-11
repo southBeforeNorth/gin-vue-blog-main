@@ -27,7 +27,13 @@
                     <table role="presentation" class="main">
 
                         <!-- START MAIN CONTENT AREA -->
-                        {{block "content" .}}{{end}}
+                        {{if eq .TemplateType "email-verify"}}
+                            {{template "email-verify-content" .}}
+                        {{else if eq .TemplateType "password-reset"}}
+                            {{template "password-reset-content" .}}
+                        {{else}}
+                            {{block "content" .}}{{end}}
+                        {{end}}
                         <!-- END MAIN CONTENT AREA -->
                     </table>
 

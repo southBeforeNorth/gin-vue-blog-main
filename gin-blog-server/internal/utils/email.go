@@ -21,9 +21,11 @@ import (
 
 // 注册的核心思想即发送邮件的同时创建code存储在本地redis中，当用户点击验证链接时即向sever发出code数据，如果这个数据在redis中存在，则验证成功，否则失败
 type EmailData struct {
-	URL      template.URL // 验证链接
-	UserName string       // 用户名即邮箱地址
-	Subject  string       // 邮件主题
+	URL          template.URL // 验证链接
+	UserName     string       // 用户名即邮箱地址
+	Subject      string       // 邮件主题
+	Code         string       // 验证码（用于修改密码）
+	TemplateType string       // 模板类型
 }
 
 // 将邮箱地址转换成小写，并去除空格
@@ -35,6 +37,12 @@ func Format(email string) string {
 // 生成随机字符串
 func GetCode() string {
 	code := randstr.String(24)
+	return code
+}
+
+// 生成六位数字验证码
+func GetSixDigitCode() string {
+	code := randstr.String(6, "0123456789")
 	return code
 }
 
@@ -77,12 +85,16 @@ func ParseEmailVerificationInfo(info string) (string, string, error) {
 
 // 生成验证链接
 func GetEmailVerifyURL(info string) string {
-	// baseurl := g.GetConfig().Server.Port
-	// if baseurl[0] == ':' {
-	// 	baseurl = fmt.Sprintf("localhost%s", baseurl)
-	// }
-	// 如果是用docker部署,则 注释上面的代码，使用下面的代码
-	baseurl := "https://ibreeze.top/"
+	baseurl := g.GetConfig().Server.BaseURL
+	if baseurl == "" {
+		// 如果没有配置BaseURL，使用默认的localhost
+		port := g.GetConfig().Server.Port
+		if port[0] == ':' {
+			baseurl = fmt.Sprintf("http://localhost%s", port)
+		} else {
+			baseurl = fmt.Sprintf("http://localhost:%s", port)
+		}
+	}
 
 	return fmt.Sprintf("%s/api/email/verify?info=%s", baseurl, info) // form数据
 }
@@ -90,9 +102,11 @@ func GetEmailVerifyURL(info string) string {
 // 生成邮件数据
 func GetEmailData(email string, info string) *EmailData {
 	return &EmailData{
-		URL:      template.URL(GetEmailVerifyURL(info)), // 验证链接
-		UserName: email,                                 // 用户邮箱地址
-		Subject:  "请完成帐号注册",                             // 邮件主题
+		URL:          template.URL(GetEmailVerifyURL(info)), // 验证链接
+		UserName:     email,                                 // 用户邮箱地址
+		Subject:      "请完成帐号注册",                             // 邮件主题
+		Code:         "",                                    // 注册邮件不需要验证码
+		TemplateType: "email-verify",                        // 注册邮件类型
 	}
 }
 
@@ -117,8 +131,6 @@ func ParseTemplateDir(dir string) (*template.Template, error) {
 }
 
 // 发送邮件
-// 发送邮件需要配置邮箱服务器信息， 可以在config.yaml中配置
-// 以下情况会发生错误: 1. 邮箱配置错误,smtp信息错误 2. 修改模板后,解析模板失败!
 func SendEmail(email string, data *EmailData) error {
 	config := g.GetConfig().Email
 	from := config.From
@@ -129,7 +141,8 @@ func SendEmail(email string, data *EmailData) error {
 	Port := config.Port
 	slog.Info("User:" + User + "  Pass:" + Pass + "  Host:" + Host + "  Port:")
 	var body bytes.Buffer
-	// 解析模板
+
+	// 统一解析所有模板文件
 	template, err := ParseTemplateDir("assets/templates")
 	if err != nil {
 		slog.Error(fmt.Sprintf("模板解析失败,错误原因：%s", err.Error()))
@@ -139,7 +152,7 @@ func SendEmail(email string, data *EmailData) error {
 
 	fmt.Println("URL:", data.URL)
 	// 执行模板
-	template.ExecuteTemplate(&body, "email-verify.tpl", &data) // 把html数据存储在body中， 第二个参数是模板名称， 第三个参数是模板数据（把模板中的占位符换成data数据）
+	template.ExecuteTemplate(&body, "base", &data) // 把html数据存储在body中， 第二个参数是模板名称， 第三个参数是模板数据（把模板中的占位符换成data数据）
 	//为了确保html文件在各个邮件客户端都能正常显示，把html转换成内联模式
 	htmlString := body.String()
 	prem, _ := premailer.NewPremailerFromString(htmlString, nil)

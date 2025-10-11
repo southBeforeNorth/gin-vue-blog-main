@@ -4,9 +4,10 @@ export default {
   login: (data = {}) => baseRequest.post('/login', data),
   register: (data = {}) => baseRequest.post('/register', data),
   logout: () => baseRequest.get('/logout'),
-  /** 发送验证码 */
-  sendCode: params => baseRequest.get('/code', { params }),
-
+  /** 修改密码 */
+  changePassword: (data = {}) => baseRequest.post('/reset-password', data),
+  /** 发送修改密码验证码 */
+  sendchangePasswordCode: (data = {}) => baseRequest.post('/send-password-reset-code', data),
   /** 关于我 */
   about: () => request.get('/about'),
   /** 获取页面 */

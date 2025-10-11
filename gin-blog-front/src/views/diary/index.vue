@@ -73,46 +73,6 @@ const formatTime = (timestamp) => {
 }
 
 
-// // 修改 loadPosts 函数
-// const loadPosts = async (isRefresh = false) => {
-//   if (state.loading) return
-  
-//   state.loading = true
-  
-//   try {
-//     // 如果是刷新，重置页码
-//     if (isRefresh) {
-//       state.page = 1
-//       state.hasMore = true
-//     }
-   
-//     const resp = await api.getDiarys({
-//       page: state.page,  // 使用当前页码
-//       page_size: state.pageSize,
-//       content:'',
-//       add_start_time:0,
-//       end_start_time:0
-//     })
-//     const newPosts = resp.data.page_data || []
-//     const total = resp.data.total || 0 // 假设API返回总数
-
-//     if (isRefresh) {
-//       state.posts = newPosts
-//     } else {
-//       state.posts.push(...newPosts)
-//     }
-
-//     // 修复：无论是否刷新都要正确处理页码和hasMore
-//     state.hasMore = state.posts.length < total
-//     if (newPosts.length > 0) {
-//       state.page++
-//     }
-//   } catch (error) {
-//     console.error('加载失败:', error)
-//   } finally {
-//     state.loading = false
-//   }
-// }
 
 const loadPosts = async (isRefresh = false) => {
   if (state.loading) return

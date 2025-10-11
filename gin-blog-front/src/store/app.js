@@ -7,6 +7,7 @@ export const useAppStore = defineStore('app', {
     searchFlag: false,
     loginFlag: false,
     registerFlag: false,
+    changePasswordFlag: false,
     collapsed: false, // 侧边栏折叠（移动端）
 
     page_list: [], // 页面数据
@@ -38,6 +39,7 @@ export const useAppStore = defineStore('app', {
     setCollapsed(flag) { this.collapsed = flag },
     setLoginFlag(flag) { this.loginFlag = flag },
     setRegisterFlag(flag) { this.registerFlag = flag },
+    setChangePasswordFlag(flag) { this.changePasswordFlag = flag },
     setSearchFlag(flag) { this.searchFlag = flag },
 
     async getBlogInfo() {

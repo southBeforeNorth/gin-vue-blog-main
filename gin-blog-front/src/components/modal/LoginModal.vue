@@ -61,9 +61,10 @@ function openRegister() {
   loginFlag.value = false
 }
 
-// TODO:忘记密码
-function openForget() {
-  window?.$message?.info('暂时不支持找回密码!')
+// 打开修改密码
+function openChangePassword() {
+  appStore.setLoginFlag(false)
+  appStore.setChangePasswordFlag(true)
 }
 </script>
 
@@ -97,7 +98,7 @@ function openForget() {
           <button @click="openRegister">
             立即注册
           </button>
-          <button @click="openForget">
+          <button @click="openChangePassword">
             忘记密码？
           </button>
         </div>

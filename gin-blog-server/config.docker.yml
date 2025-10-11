@@ -1,6 +1,8 @@
 Server:
   Mode: release # debug | release
   Port: :8765
+  BaseURL: "https://ibreeze.top" # 基础URL，用于生成邮件验证链接
+  #BaseURL: "http://localhost:8765" # 基础URL，用于生成邮件验证链接
   DbType: "mysql" # mysql | sqlite
   DbAutoMigrate: false # 是否自动迁移数据库表结构 (表结构没变可以不迁移, 提高启动速度)
 JWT:
@@ -26,7 +28,7 @@ Session:
   Salt: "salt"
   MaxAge: 600 # second
 Log:
-  Level: "error" # debug | info | warn | error
+  Level: "debug" # debug | info | warn | error
   Format: "text" # text | json
   Directory: "log"
 # Email:

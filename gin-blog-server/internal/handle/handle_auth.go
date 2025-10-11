@@ -29,6 +29,16 @@ type RegisterReq struct {
 	Password string `json:"password" binding:"required,min=4,max=20"`
 }
 
+type SendPasswordResetCodeReq struct {
+	Email string `json:"email" binding:"required,email"`
+}
+
+type ResetPasswordReq struct {
+	Email    string `json:"email" binding:"required,email"`
+	Code     string `json:"code" binding:"required"`
+	Password string `json:"newPassword" binding:"required,min=4,max=20"`
+}
+
 type LoginVO struct {
 	model.UserInfo
 
@@ -179,6 +189,7 @@ func (*UserAuth) Logout(c *gin.Context) {
 // 首先检查用户名是否存在，避免重复注册；其次把用户输入的信息加密保存在redis中，等待验证
 // 在以下情况下会出错：1. 用户邮箱已经注册过 2.用户邮箱无效等原因导致的发送邮件失败
 func (*UserAuth) Register(c *gin.Context) {
+	slog.Debug("Register: start")
 	var regreq RegisterReq
 	if err := c.ShouldBindJSON(&regreq); err != nil {
 		ReturnError(c, g.ErrRequest, err)
@@ -219,6 +230,148 @@ func (*UserAuth) Register(c *gin.Context) {
 	ReturnSuccess(c, nil)
 }
 
+// @Summary 发送修改密码验证码
+// @Description 发送修改密码验证码到用户邮箱
+// @Tags UserAuth
+// @Param form body SendPasswordResetCodeReq true "发送验证码请求"
+// @Accept json
+// @Produce json
+// @Success 0 {object} string
+// @Router /send-password-reset-code [post]
+func (*UserAuth) SendPasswordResetCode(c *gin.Context) {
+	var req SendPasswordResetCodeReq
+	if err := c.ShouldBindJSON(&req); err != nil {
+		ReturnError(c, g.ErrRequest, err)
+		return
+	}
+
+	// 格式化邮箱地址
+	req.Email = utils.Format(req.Email)
+
+	db := GetDB(c)
+	rdb := GetRDB(c)
+
+	// 检查用户是否存在
+	_, err := model.GetUserAuthInfoByName(db, req.Email)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			ReturnError(c, g.ErrUserNotExist, nil)
+			return
+		}
+		ReturnError(c, g.ErrDbOp, err)
+		return
+	}
+
+	// 检查发送频率限制
+	rateLimitKey := "rate_limit:" + req.Email
+	rateLimitExist, err := GetMailInfo(rdb, rateLimitKey)
+	if err == nil && rateLimitExist {
+		ReturnError(c, g.ErrRequest, errors.New("发送过于频繁，请1分钟后再试"))
+		return
+	}
+
+	// 用户存在，生成验证码
+	code := utils.GetSixDigitCode()
+	// 将验证码与邮箱绑定存储，格式：email:code -> true
+	emailCodeKey := req.Email + ":" + code
+	SetMailInfo(rdb, emailCodeKey, 5*time.Minute) // 5分钟过期
+
+	// 添加发送频率限制，防止恶意请求
+	SetMailInfo(rdb, rateLimitKey, 1*time.Minute) // 1分钟内只能发送一次
+
+	// 生成邮件数据
+	emailData := &utils.EmailData{
+		UserName:     req.Email,
+		Subject:      "修改密码验证",
+		Code:         code,
+		TemplateType: "password-reset", // 修改密码邮件类型
+	}
+
+	// 发送邮件
+	err = utils.SendEmail(req.Email, emailData)
+	if err != nil {
+		ReturnError(c, g.ErrSendEmail, err)
+		return
+	}
+
+	slog.Info("修改密码验证码发送成功: " + req.Email)
+	ReturnSuccess(c, "验证码已发送到您的邮箱，请查收")
+}
+
+// @Summary 修改密码
+// @Description 通过验证码修改用户密码
+// @Tags UserAuth
+// @Param form body ResetPasswordReq true "修改密码请求"
+// @Accept json
+// @Produce json
+// @Success 0 {object} string
+// @Router /reset-password [post]
+func (*UserAuth) ResetPassword(c *gin.Context) {
+	var req ResetPasswordReq
+	if err := c.ShouldBindJSON(&req); err != nil {
+		ReturnError(c, g.ErrRequest, err)
+		return
+	}
+
+	// 格式化邮箱地址
+	req.Email = utils.Format(req.Email)
+
+	db := GetDB(c)
+	rdb := GetRDB(c)
+
+	// 检查用户是否存在
+	userAuth, err := model.GetUserAuthInfoByName(db, req.Email)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			ReturnError(c, g.ErrUserNotExist, nil)
+			return
+		}
+		ReturnError(c, g.ErrDbOp, err)
+		return
+	}
+
+	// 检查验证码尝试次数限制
+	attemptKey := "attempt:" + req.Email
+	attemptCount, err := rdb.Get(rctx, attemptKey).Int()
+	if err == nil && attemptCount >= 5 {
+		ReturnError(c, g.ErrRequest, errors.New("验证码尝试次数过多，请重新获取验证码"))
+		return
+	}
+
+	// 验证验证码
+	// 检查验证码是否存在于Redis中，并与邮箱绑定
+	emailCodeKey := req.Email + ":" + req.Code
+	ifExist, err := GetMailInfo(rdb, emailCodeKey)
+	if err != nil || !ifExist {
+		// 增加尝试次数
+		rdb.Incr(rctx, attemptKey)
+		rdb.Expire(rctx, attemptKey, 10*time.Minute) // 10分钟内限制尝试次数
+		ReturnError(c, g.ErrCodeExpiredOrInvalid, errors.New("验证码已过期或无效"))
+		return
+	}
+
+	// 验证码有效，删除Redis中的验证码和尝试次数记录
+	DeleteMailInfo(rdb, emailCodeKey)
+	rdb.Del(rctx, attemptKey)
+
+	// 加密新密码
+	hashedPassword, err := utils.BcryptHash(req.Password)
+	if err != nil {
+		ReturnError(c, g.ErrRequest, err)
+		return
+	}
+
+	// 更新用户密码
+	err = model.UpdateUserPassword(db, userAuth.ID, hashedPassword)
+	if err != nil {
+		ReturnError(c, g.ErrDbOp, err)
+		return
+	}
+
+	slog.Info("用户密码修改成功: " + req.Email)
+	ReturnSuccess(c, "密码修改成功")
+}
+
 // 邮箱验证
 // 当用户点击邮箱中的链接时，会携带info（加密后的帐号密码）向这个接口发送请求。
 // Verify会检查info是否存在redis中，若存在则认证成功，完成注册
@@ -226,13 +379,16 @@ func (*UserAuth) Register(c *gin.Context) {
 func (*UserAuth) VerifyCode(c *gin.Context) {
 	var code string
 	if code = c.Query("info"); code == "" {
+		slog.Error("VerifyCode: code is empty")
 		returnErrorPage(c)
 		return
 	}
+	slog.Error("VerifyCode: code", "code", code)
 
 	// 验证是否有code在数据库中
 	ifExist, err := GetMailInfo(GetRDB(c), code)
 	if err != nil {
+		slog.Error("VerifyCode GetMailInfo", "err", err)
 		returnErrorPage(c)
 		return
 	}
@@ -244,7 +400,9 @@ func (*UserAuth) VerifyCode(c *gin.Context) {
 	DeleteMailInfo(GetRDB(c), code)
 
 	username, password, err := utils.ParseEmailVerificationInfo(code)
+	slog.Error("VerifyCode: username", "username", username)
 	if err != nil {
+		slog.Error("VerifyCode: ParseEmailVerificationInfo", "err", err)
 		returnErrorPage(c)
 		return
 	}
@@ -252,6 +410,7 @@ func (*UserAuth) VerifyCode(c *gin.Context) {
 	// 注册用户
 	_, _, _, err = model.CreateNewUser(GetDB(c), username, password)
 	if err != nil {
+		slog.Error("VerifyCode CreateNewUser", "err", err)
 		returnErrorPage(c)
 		return
 	}
@@ -335,7 +494,7 @@ func returnErrorPage(c *gin.Context) {
         <body>
             <div class="container">
                 <h1>注册失败</h1>
-                <p>请重试。</p>
+                <p>请重试</p>
             </div>
         </body>
         </html>

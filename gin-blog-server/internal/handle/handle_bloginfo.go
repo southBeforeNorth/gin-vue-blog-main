@@ -6,12 +6,12 @@ import (
 	g "gin-blog/internal/global"
 	"gin-blog/internal/model"
 	"gin-blog/internal/utils"
-	"log/slog"
-	"strings"
-	"time"
-
 	"github.com/gin-gonic/gin"
 	"github.com/go-redis/redis/v9"
+	"log/slog"
+	"strconv"
+	"strings"
+	"time"
 )
 
 type BlogInfo struct{}
@@ -184,14 +184,20 @@ func (*BlogInfo) Report(c *gin.Context) {
 		ReturnError(c, g.ErrRequest, err)
 		return
 	}
-
 	rdb := GetRDB(c)
 	ipAddress := utils.IP.GetIpAddress(c)
 	userAgent := utils.IP.GetUserAgent(c)
 	browser := userAgent.Name + " " + userAgent.Version.String()
 	os := userAgent.OS + " " + userAgent.OSVersion.String()
 	today := time.Now().Format("2006-01-02 15")
+	db := GetDB(c)
+	auth, _ := CurrentUserAuth(c)
+	userId := 0
 	uuid := utils.MD5(ipAddress + browser + os + today)
+	if auth != nil {
+		userId = auth.UserInfoId
+		uuid = utils.MD5(ipAddress + browser + os + today + strconv.Itoa(userId))
+	}
 	ctx := context.Background()
 
 	saveSiteVisit := func(iPSource string) {
@@ -212,6 +218,7 @@ func (*BlogInfo) Report(c *gin.Context) {
 			Device:          "电脑",
 			Coordinates:     coordinates,
 			LocationAddress: locationAddress,
+			UserId:          userId,
 		}
 		if userAgent.URL != nil {
 			siteVisit.PageURL = userAgent.URL.Path
@@ -221,11 +228,6 @@ func (*BlogInfo) Report(c *gin.Context) {
 		}
 		if userAgent.Tablet {
 			siteVisit.Device = "平板"
-		}
-		db := GetDB(c)
-		auth, _ := CurrentUserAuth(c)
-		if auth != nil {
-			siteVisit.UserId = auth.UserInfoId
 		}
 		err := model.SaveSiteVisit(db, &siteVisit)
 		if err != nil {

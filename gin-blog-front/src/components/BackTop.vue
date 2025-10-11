@@ -10,14 +10,14 @@ watchThrottled(y, () => {
 }, { throttle: 100 })
 
 const options = [
-  {
-    icon: 'bi:moon-stars-fill',
-    fn: () => window.$message?.info('黑夜模式开发中...'),
-  },
-  {
-    icon: 'uiw:setting',
-    fn: () => window.$message?.info('设置开发中...'),
-  },
+  // {
+  //   icon: 'bi:moon-stars-fill',
+  //   fn: () => window.$message?.info('黑夜模式开发中...'),
+  // },
+  // {
+  //   icon: 'uiw:setting',
+  //   fn: () => window.$message?.info('设置开发中...'),
+  // },
   {
     icon: 'fluent:arrow-up-12-filled',
     fn: () => window.scrollTo({ behavior: 'smooth', top: 0 }),

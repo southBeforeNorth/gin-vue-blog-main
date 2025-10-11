@@ -1,5 +1,4 @@
-{{template "base" .}}
-{{define "content"}}
+{{define "email-verify-content"}}
     <tr>
         <td class="wrapper">
             <table role="presentation" border="0" cellpadding="0" cellspacing="0">

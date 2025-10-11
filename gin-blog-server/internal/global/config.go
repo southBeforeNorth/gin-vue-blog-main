@@ -12,6 +12,7 @@ type Config struct {
 	Server struct {
 		Mode          string // debug | release
 		Port          string
+		BaseURL       string // 基础URL，用于生成邮件验证链接
 		DbType        string // mysql | sqlite
 		DbAutoMigrate bool   // 是否自动迁移数据库表结构
 		DbLogMode     string // silent | error | warn | info
