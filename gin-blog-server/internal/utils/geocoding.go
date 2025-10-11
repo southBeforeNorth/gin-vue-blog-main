@@ -24,34 +24,10 @@ type AmapGeocodeResponse struct {
 	Regeocode struct {
 		FormattedAddress string `json:"formatted_address"`
 		AddressComponent struct {
-			Country      string `json:"country"`
-			Province     string `json:"province"`
-			City         string `json:"city"`
-			District     string `json:"district"`
-			Township     string `json:"township"`
-			Towncode     string `json:"towncode"`
-			Citycode     string `json:"citycode"`
-			Adcode       string `json:"adcode"`
-			Neighborhood struct {
-				Name string `json:"name"`
-				Type string `json:"type"`
-			} `json:"neighborhood"`
-			Building struct {
-				Name []string `json:"name"`
-				Type []string `json:"type"`
-			} `json:"building"`
-			StreetNumber struct {
-				Number    string `json:"number"`
-				Location  string `json:"location"`
-				Direction string `json:"direction"`
-				Distance  string `json:"distance"`
-				Street    string `json:"street"`
-			} `json:"streetNumber"`
-			BusinessAreas []struct {
-				Location string `json:"location"`
-				Name     string `json:"name"`
-				ID       string `json:"id"`
-			} `json:"businessAreas"`
+			Country  string `json:"country"`
+			Province string `json:"province"`
+			City     string `json:"city"`
+			District string `json:"district"`
 		} `json:"addressComponent"`
 	} `json:"regeocode"`
 }
@@ -66,9 +42,6 @@ type BaiduGeocodeResponse struct {
 			Province string `json:"province"`
 			City     string `json:"city"`
 			District string `json:"district"`
-			Town     string `json:"town"`
-			Street   string `json:"street"`
-			Adcode   string `json:"ad_code"`
 		} `json:"addressComponent"`
 	} `json:"result"`
 }
